@@ -158,6 +158,61 @@ def recommend_activity():
         # Return error response if there's an exception
         error_message = {'error': str(e)}
         return jsonify(error_message), 500
+def get_place_suggestion(city, temperature, weather_type, wind_speed, humidity):
+    input_prompt = f"""
+        You are an expert in suggesting activities.
+        You have been asked to recommend activities based on the following weather conditions in {city}:
+        - Temperature: {temperature}°C
+        - Weather: {weather_type}
+        - Wind Speed: {wind_speed} Km/s
+        - Humidity: {humidity}%
+        
+        Please suggest both indoor and outdoor places suitable for these conditions.
+        
+        For open places:
+        - Recommend nearby parks, hiking trails, beaches, or outdoor attractions in {city}.
+        - Provide Google Maps links to these locations if available.
+        
+        For close places:
+        - Suggest indoor entertainment options like museums, cafes, theaters, or indoor sports facilities in {city}.
+        - Provide Google Maps links to these locations if available.
+        
+        Additionally, suggest some outstation destinations suitable for the current weather conditions.
+        - Recommend popular nearby tourist spots or day trip destinations.
+        - Provide Google Maps links to these locations if available.
+        
+        Make sure to consider the safety and comfort of the individuals while suggesting activities.
+    """
+    model = genai.GenerativeModel('gemini-pro')
+    response = model.generate_content([input_prompt])
+    return response.text
+
+
+@app.route('/places-to-visit', methods=['POST'])
+def recommend_place():
+    try:
+        data = request.json
+        city = data['City']
+        temperature = data['Temperature']
+        weather_type = data['WeatherType']
+        wind_speed = data['Wind_speed']
+        humidity = data['Humidity']
+        
+        # Get activity recommendation based on weather conditions
+        activity_suggestion_place = get_place_suggestion(city, temperature, weather_type, wind_speed, humidity)
+
+        # Prepare the response JSON
+        response = {
+            'PlaceSuggestion': activity_suggestion_place
+        }
+
+        # Return the response as JSON
+        return jsonify(response), 200
+
+    except Exception as e:
+        # Return error response if there's an exception
+        error_message = {'error': str(e)}
+        return jsonify(error_message), 500
 
 
 if __name__ == '__main__':
